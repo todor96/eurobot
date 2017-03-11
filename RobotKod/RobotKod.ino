@@ -13,6 +13,7 @@
 #define PID_MAX 50
 #define PID_MIN 0
 
+
 //Motor desni
 int dirRPinA = 2;
 int dirRPinB = 3;
@@ -35,6 +36,8 @@ double Kd = 1;
 //brojevi obrtaja tockova
 volatile long leftCount = 0;
 volatile long rightCount = 0;
+volatile double leftDistance = 0;
+volatile double rightDistance = 0;
 
 //pravci motora
 int motorDirectionR;
@@ -111,9 +114,11 @@ void loop() {
 
   motorControl.setMotorDirection(motorDirectionR, dirRPinA, dirRPinB);
   motorControl.setMotorDirection(motorDirectionL, dirLPinA, dirLPinB);
-  
-  motorControl.drive(leftCount, rightCount, setpointInput, OutputL, OutputR);
-  
+
+  motorControl.drive(leftCount, rightCount, setpointInput, OutputL, OutputR, &leftDistance, &rightDistance);
+  //TODO: srediti racunanje PID za driveCm
+  // motorControl.driveCm(300, leftCount, rightCount, OutputL, OutputR, &leftDistance, &rightDistance);
+
   //stampanje svih promenljivih na serijski port
   printDebug();
 }
@@ -133,7 +138,6 @@ void rightEncoderEvent() {
       rightCount--;
     }
   }
-
 }
 
 //racunanje obrtaja levog enkodera
@@ -151,8 +155,10 @@ void leftEncoderEvent() {
       leftCount++;
     }
   }
+
 }
 
+//TODO: ubaciti calculate PID u MotorConrol.cpp, tako da moze da racuna i za drive i za drive Cm
 void calculatePidInput() {
   if (setpointInput > leftCount) {                            //u slucaju da je setpoint veci od trenutne pozicije
     InputL = leftCount;
@@ -208,6 +214,9 @@ void printDebug() {
 
   Serial.print("  dirL ");
   Serial.println(motorDirectionL);
+
+  Serial.print("  leftDistance  ");
+  Serial.println(leftDistance);
 
 }
 
