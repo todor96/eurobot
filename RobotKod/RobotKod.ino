@@ -8,8 +8,6 @@
 #define LH_ENCODER_A 20
 #define LH_ENCODER_B 21
 
-//Absolutna greska enkodera
-#define ABS_ERROR 10
 
 //Min i max PID output-a
 #define PID_MAX 50
@@ -113,18 +111,9 @@ void loop() {
 
   motorControl.setMotorDirection(motorDirectionR, dirRPinA, dirRPinB);
   motorControl.setMotorDirection(motorDirectionL, dirLPinA, dirLPinB);
-
-  //absolutna greska za poziciju levog motora
-  if (abs(setpointInput - leftCount) > ABS_ERROR) {
-    analogWrite(speedPinL, OutputL);
-  }
-  else analogWrite(speedPinL, 0);
-
-  //absolutna greska za poziciju desnog motora
-  if (abs(setpointInput - rightCount) > ABS_ERROR) {
-    analogWrite(speedPinR, OutputR);
-  }
-  else analogWrite(speedPinR, 0);
+  
+  motorControl.drive(leftCount, rightCount, setpointInput, OutputL, OutputR);
+  
   //stampanje svih promenljivih na serijski port
   printDebug();
 }
