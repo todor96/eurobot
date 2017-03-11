@@ -4,6 +4,11 @@
 #define LH_ENCODER_A 20
 #define LH_ENCODER_B 21
 
+#define rTockova 12
+#define pi 3.14
+
+#define enkoderPut 140
+
 // Motor 1
 int dir1PinA = 2;
 int dir2PinA = 3;
@@ -21,17 +26,29 @@ double Setpoint1, Input1, Output1;
 volatile long leftCount = 0;
 volatile long rightCount = 0;
 
-int a=0;
 unsigned long vremeD = 0;
 unsigned long vremeL = 0;
+
+unsigned long predhodnoVremeD = 0;
+unsigned long predhodnoVremeL = 0;
+
 unsigned long predhodniMilisD = 0;
 unsigned long predhodniMilisL = 0;
 
-int proba=50;
+float ubrzanjeL = 0;
+float ubrzanjeD = 0;
 
-int racunajPid(int input, int setpoint, int output){
-  if(input < setpoint){
-    output++;
+int brzinaD = 0;
+int brzinaL = 0;
+
+float predjeniPutD = 0;
+float predjeniPutL = 0;
+
+float setpointZaPut = 100;
+
+int racunajPid(int input, int setpoint, int output){                  //nije bash pid ali radi posao
+  if(input < setpoint){                                               //mozemo staviti neku promenljivu tipa predjeni put, na osnovu koga bi moglo brze/sporije da se menja
+    output++;                                                         //moz da se menja kasnije
     if(output > 255){
       output = 255;
     }else if(output < 0){
@@ -54,8 +71,7 @@ void setup() {
 // initialize serial communication @ 9600 baud:
   Serial.begin(9600);
 
-  //Define L298N Dual H-Bridge Motor Controller Pins
-    Input2 = 0;
+    Input2 = 0;                                       //na osnovu inputa racunamo output a setpoint je gde zelimo outpud da bude (gornja f-ja racunajPid)
     Setpoint2 = 0;
     Input1 = 0;
     Setpoint1 = 0;
@@ -73,7 +89,7 @@ void setup() {
   pinMode(LH_ENCODER_B, INPUT);
 
   // initialize hardware interrupts
-  attachInterrupt(digitalPinToInterrupt(18), rightEncoderEvent, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(18), rightEncoderEvent, CHANGE);      //interupti za enkodere
   attachInterrupt(digitalPinToInterrupt(20), leftEncoderEvent, CHANGE);
 
   Serial.begin(9600);
@@ -86,8 +102,8 @@ void setup() {
   digitalWrite(dir2PinA,0);
   analogWrite(speedPinA,0);
   
-  Serial.print("motor desni, dir1pin a , napred ->");
-  Serial.println(rightCount);
+  //Serial.print("motor desni, dir1pin a , napred ->");
+  //Serial.println(rightCount);
 
   digitalWrite(dir1PinB,1);
   digitalWrite(dir2PinB,0);
@@ -97,42 +113,50 @@ void setup() {
   digitalWrite(dir2PinB,0);
   analogWrite(speedPinB,0);
   
-  Serial.print("motor levi, dir1pin b , napred ->");
-  Serial.println(leftCount);
+  //Serial.print("motor levi, dir1pin b , napred ->");
+ // Serial.println(leftCount);
   delay(5000);
   leftCount = 0;
   rightCount = 0;
 }
 
-int ch =1;
-int i =0;
+int ch = 1;
+int a = 300;    //max brzina
+int w = 0;      //setpoint za brzinu za pid
 
 void loop() {
 
-  if(Serial.available() > 0){
-    a = Serial.parseInt();
+  /*if(Serial.available() > 0){     
+                                                          //a nam je setpoint gde zelimo da bude brzina/ubrzanje/predjeni put
+    a = Serial.parseInt();                                //ch je samo za startovanje/stopiranje motora kad smo testirali
     ch=Serial.parseInt();
     Serial.read();
-    
 
-             // Serial.print("setpoint");
-              //Serial.println(a);
-
-  }
+  }*/
   
-    Setpoint1 = a;
-    Setpoint2 = a;
+    Setpoint1 = w;
+    Setpoint2 = w;
   
-  Input1 = 1000000/vremeD;
+  Input1 = 1000000/vremeD;                                //inputi su nam brzine ovde
   Output1 = racunajPid(Input1,Setpoint1,Output1);
   Input2 = 1000000/vremeL;
   Output2 = racunajPid(Input2,Setpoint2,Output2);
-  //myPID2.Compute();
+
+  if (w >= 0 && w < a){
+    w+=50;
+  }
+
+  predjeniPutD = 2*pi*rightCount/enkoderPut;                     //enkoderPut su otkucaji enkodera kada obrne tocak jedan krug, valjda, kad zamenimo tockove videcemo vec koliko je tacno
+  predjeniPutL = 2*pi*leftCount/enkoderPut;                      //trenutno je 140
   
-  if(ch == 1){
+  if(predjeniPutD >= setpointZaPut){
     digitalWrite(dir1PinA,0);
+    
+  }else if (predjeniPutL >= setpointZaPut){
+    
     digitalWrite(dir1PinB,0);
-  }else if (ch == 2){
+    
+  }else{
     digitalWrite(dir1PinA,1);
     digitalWrite(dir1PinB,1);
   }
@@ -149,29 +173,44 @@ void loop() {
   Serial.print(Input1);
   Serial.print(" Input2: ");
   Serial.println(Input2);*/
-
+  Serial.print(" predjeni put D: ");
+  Serial.print(predjeniPutD);
+  Serial.print(" predjeni put L : ");
+  Serial.print(predjeniPutL);
+  Serial.print(" w: ");
+  Serial.println(w);
   
   
+  /*Serial.print("brzina D: ");
+  Serial.print(brzinaD);
+  Serial.print(" brzina L: ");
+  Serial.println(brzinaL);*/
   //analogWrite(speedPinB,Output1);
   //analogWrite(speedPinA,Output2);
   
 }
 
+// encoder event for the interrupt call
 void rightEncoderEvent() {
  
-  //vremeD = ddd - vremeD;
-  vremeD = micros() - predhodniMilisD;
+  vremeD = micros() - predhodniMilisD;                                          //vremeD i vremeL su brzine u sushtini i preko njih racunamo ubrzanje
+  brzinaD = 1000000/vremeD;                                                     //tj one su vreme izmedju dva ocitavanja enkodera u mikrosekundama
+  ubrzanjeL = 1000000*(brzinaD-predhodnoVremeD)/vremeD;
+  predhodnoVremeD = brzinaD;
   predhodniMilisD = micros();
   if (digitalRead(RH_ENCODER_A) == digitalRead(RH_ENCODER_B)) {
-      rightCount--;
-    } else {
       rightCount++;
+    } else {
+      rightCount--;
     }
 }
 
 // encoder event for the interrupt call
 void leftEncoderEvent() {
   vremeL = micros() - predhodniMilisL;
+  brzinaL = 1000000/vremeL;
+  ubrzanjeL = 1000000*(brzinaL-predhodnoVremeL)/vremeL;
+  predhodnoVremeL = brzinaL;
   predhodniMilisL = micros();
   if (digitalRead(LH_ENCODER_A) == digitalRead(LH_ENCODER_B)) {
       leftCount--;
