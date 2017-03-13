@@ -25,17 +25,17 @@
 
 //PARAMETRI TOCKOVA *********************************************************
 
-#define ABS_ERROR 5                   //Absolutna greska enkodera
-#define OBIM 39.8                     //Obim tockova
+#define ABS_ERROR 2                   //Absolutna greska enkodera
+#define OBIM 40.2                     //Obim tockova
 #define ENCODER_STEPS 150             //Broj koraka enkodera u punom krugu
 
 
 //PARAMETRI PID-a ***********************************************************
 
-#define PID_MAX 100                    //Maksimalni output PID algoritma
+#define PID_MAX 70                    //Maksimalni output PID algoritma
 #define PID_MIN 0                     //Minimalni output PID algoritma
 #define KP 2.0                        //KP konstanta PID algoritma
-#define KI 1.0                        //KI konstanta PID algoritma
+#define KI 2.0                        //KI konstanta PID algoritma
 #define KD 0.5                        //KD konstanta PID algoritma
 
 
@@ -72,6 +72,8 @@ class MotorControl {
     int myMotorDirectionR;            //Pravac Desnog motora
     volatile long *myRightCount;      //Broj obrtaja desnog enkodera
     volatile double* myRightDistance; //Predjeni put desnog tocka
+
+    boolean standing = false;
 
 
     //PID ******************************************************************
@@ -117,6 +119,8 @@ class MotorControl {
     void MotorControl :: driveCm(double len);                         //Funkcija za kretanje za zadati put u centimetrima
 
     void MotorControl :: calculateDistance();                         //Racunanje predjenog puta tockova
+
+    void MotorControl :: rotateLeft(int input);
 
 
     //KONTROLA PID-a ***********************************************************************************************************

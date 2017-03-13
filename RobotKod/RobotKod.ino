@@ -31,7 +31,7 @@ void loop() {
   
   //Pokretanje robota za odredjeni setpoint
   motorControl.driveRotations(setpointInput);
-  //motorControl.driveCm(40.8);
+  //motorControl.driveCm(50);
   
   //Stampanje svih promenljivih na serijski port
   printDebug();
@@ -60,20 +60,20 @@ void printDebug() {
   Serial.print("  PidInputR  ");
   Serial.print(motorControl.myPidInputR);
 
-  Serial.print("  enkoderR  ");
-  Serial.print(rightCount);
-
-  Serial.print("  enkoderL ");
+  Serial.print("  enkoderL  ");
   Serial.print(leftCount);
+
+  Serial.print("  enkoderR ");
+  Serial.print(rightCount);
 
   Serial.print("  dirR  ");
   Serial.print(motorControl.myMotorDirectionR);
 
   Serial.print("  dirL ");
-  Serial.println(motorControl.myMotorDirectionL);
+  Serial.print(motorControl.myMotorDirectionL);
 
   Serial.print("  leftDistance  ");
-  Serial.println(leftDistance);
+  Serial.print(leftDistance);
   
   Serial.print("  rightDistance  ");
   Serial.println(leftDistance);

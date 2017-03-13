@@ -26,6 +26,7 @@ int myMotorDirectionR;                    //Pravac Desnog motora
 volatile long *myRightCount;              //Broj obrtaja desnog enkodera
 volatile double* myRightDistance;         //Predjeni put desnog tocka
 
+boolean standing = true;
 
 
 //PID ************************************************************************
@@ -165,6 +166,8 @@ void MotorControl :: stopMotors() {                                 //Zaustavlja
 
 
 void MotorControl :: driveRotations(int noOfRotations) {            //Funkcija za kretanje za zadati broj obrtaja enkodera
+
+  standing = false;
   calculatePidInput(noOfRotations);
 
   PID_L->Compute();                                                 //* Izracunavanje Output-a PID levog motora
@@ -172,14 +175,22 @@ void MotorControl :: driveRotations(int noOfRotations) {            //Funkcija z
 
 
   if (abs(noOfRotations - *myLeftCount) > ABS_ERROR) {              //* Ako je udaljenost od setpointa veca od dozvoljene
+    standing = false;
     analogWrite(mySpeedPinL, myPidOutputL);                         //  greske, pomeraj motore,u suprotnom zaustavi
   }
-  else analogWrite(mySpeedPinL, 0);
+  else{
+    analogWrite(mySpeedPinL, 0);
+    standing = true;
+  }
 
   if (abs(noOfRotations - *myRightCount) > ABS_ERROR) {
+    standing = false;
     analogWrite(mySpeedPinR, myPidOutputR);
   }
-  else analogWrite(mySpeedPinR, 0);
+  else{
+    analogWrite(mySpeedPinR, 0);
+    standing = true;
+  }
   calculateDistance();
 }
 
@@ -200,7 +211,19 @@ void MotorControl :: calculateDistance() {                          //Racunanje 
   *myRightDistance = (1.0 * (*myRightCount) / ENCODER_STEPS) * OBIM;
 }
 
-
+void MotorControl :: rotateLeft(int input){
+    int tmp1 = *myRightCount;
+    int tmp2 = *myLeftCount;
+    MotorControl :: setMotorDirectionL(DIR_BW);
+    MotorControl :: setMotorDirectionR(DIR_FW);
+    analogWrite(mySpeedPinL, 255);
+    analogWrite(mySpeedPinR, 255);
+    while((*myRightCount - tmp1) <= input);
+    analogWrite(mySpeedPinL, 0);
+    analogWrite(mySpeedPinR, 0);
+    *myRightCount = tmp1;
+    *myLeftCount = tmp2;
+}
 
 //KONTROLA PID-a **********************************************************************************************************************
 
@@ -212,7 +235,7 @@ void MotorControl :: calculatePidInput(int setpoint) {              //Racunanje 
     setMotorDirectionL(DIR_FW);
   }
   else if (setpoint < *myLeftCount) {                               //* u slucaju da je setpoint manji od trenutne pozicije,
-    myPidInputL = setpoint - (*myLeftCount - setpoint);             //  kada robot treba da ide unazad, input se postavi da je
+    myPidInputL = setpoint - abs((*myLeftCount - setpoint));        //  kada robot treba da ide unazad, input se postavi da je
     myPidSetpointL = setpoint;                                      //  manji od setpointa za razliku trenutne pozicije i setpointa,
     setMotorDirectionL(DIR_BW);                                     //  a smer motora se okrene
   }
@@ -223,7 +246,7 @@ void MotorControl :: calculatePidInput(int setpoint) {              //Racunanje 
     setMotorDirectionR(DIR_FW);
   }
   else if (setpoint < *myRightCount) {
-    myPidInputR = setpoint - (*myRightCount - setpoint);
+    myPidInputR = setpoint - abs((*myRightCount - setpoint));
     myPidSetpointR = setpoint;
     setMotorDirectionR(DIR_BW);
   }
