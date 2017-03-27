@@ -22,6 +22,21 @@ if len(sys.argv) > 1:
             thresholdColor['lower-color'] = [int(sys.argv[i+1]),int(sys.argv[i+2]),int(sys.argv[i+3])]
         elif sys.argv[i] == '--up-hsv' and len(sys.argv)>=i+3:
             thresholdColor['upper-color'] = [int(sys.argv[i+1]),int(sys.argv[i+2]),int(sys.argv[i+3])]
+        elif sys.argv[i] == '--rgb' and len(sys.argv)>=i+5:
+            thresholdColor['lower-color'] = rgb2hsvColor([sys.argv[i+1], sys.argv[i+2], sys.argv[i+3]])
+            thresholdColor['upper-color'] = rgb2hsvColor([sys.argv[i+1], sys.argv[i+2], sys.argv[i+3]])
+            if(thresholdColor['lower-color'][0] >= 10):
+                thresholdColor['lower-color'][0] -= 10
+            else:
+                thresholdColor['lower-color'][0] = 0
+
+            if(thresholdColor['upper-color'][0] <= 245):
+                thresholdColor['upper-color'][0] += 10
+            else:
+                thresholdColor['upper-color'][0] = 255
+
+            thresholdColor['lower-color'][1] = thresholdColor['lower-color'][2] = int(sys.argv[i+4])
+            thresholdColor['upper-color'][1] = thresholdColor['upper-color'][2] = int(sys.argv[i+5])
 
 if not thresholdColor.has_key('lower-color') and not thresholdColor.has_key('upper-color'):
     thresholdColor = inputColorRGB()
