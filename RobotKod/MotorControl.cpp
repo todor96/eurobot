@@ -6,6 +6,7 @@
 #endif
 
 #include "MotorControl.h"
+#include "SpeedControl.h"
 
 
 //MOTORI **********************************************************************
@@ -49,7 +50,9 @@ PID *PID_L;                               //PID za levi tocak
 PID *PID_R;                               //PID za desni tocak
 
 
+SpeedControl* speedControl;
 
+SpeedControl* mySpeed = speedControl->getInstance();
 
 MotorControl :: MotorControl(volatile long* leftCount, volatile long* rightCount, volatile double* leftDistance, volatile double* rightDistance) {
 
@@ -173,6 +176,8 @@ void MotorControl :: driveRotations(int noOfRotations) {            //Funkcija z
   PID_L->Compute();                                                 //* Izracunavanje Output-a PID levog motora
   PID_R->Compute();                                                 //  Izracunavanje Output-a PID desnog motora
 
+  mySpeed->balansirajBrzine(&myPidOutputL,&myPidOutputR);
+  //speedControl.balansirajBrzine(&myPidOutputL,&myPidOutputR);
 
   if (abs(noOfRotations - *myLeftCount) > ABS_ERROR) {              //* Ako je udaljenost od setpointa veca od dozvoljene
     standing = false;
