@@ -1,0 +1,1 @@
+python2 colored-object.py --low-hsv 98 108 100  --up-hsv 118 255 255
