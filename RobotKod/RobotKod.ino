@@ -1,5 +1,4 @@
 #include "MotorControl.h"
-#include "SpeedControl.h"
 
 //Brojevi obrtaja tockova
 volatile long leftCount = 0;
@@ -14,7 +13,6 @@ int setpointInput = 0;
 
 //Inicijalizacija biblioteke za kontrolu motora
 MotorControl motorControl(&leftCount, &rightCount, &leftDistance, &rightDistance);
-SpeedControl speedControl1(&leftCount, &rightCount);
 
 
 void setup() {
@@ -34,8 +32,6 @@ void loop() {
   //Pokretanje robota za odredjeni setpoint
   motorControl.driveRotations(setpointInput);
   //motorControl.driveCm(50);
-
-  speedControl1.racunajVremena();
   
   //Stampanje svih promenljivih na serijski port
   printDebug();
