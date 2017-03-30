@@ -6,6 +6,7 @@
 #endif
 
 #include "MotorControl.h"
+#include "SpeedControl.h"
 
 
 //MOTORI **********************************************************************
@@ -49,7 +50,7 @@ PID *PID_L;                               //PID za levi tocak
 PID *PID_R;                               //PID za desni tocak
 
 
-
+SpeedControl* speedControl;
 
 MotorControl :: MotorControl(volatile long* leftCount, volatile long* rightCount, volatile double* leftDistance, volatile double* rightDistance) {
 
@@ -173,13 +174,15 @@ void MotorControl :: driveRotations(int noOfRotations) {            //Funkcija z
   PID_L->Compute();                                                 //* Izracunavanje Output-a PID levog motora
   PID_R->Compute();                                                 //  Izracunavanje Output-a PID desnog motora
 
+  speedControl->racunajVremena(long(*myRightCount),long(*myLeftCount));
+  speedControl->balansirajBrzine(&myPidOutputL,&myPidOutputR);
 
   if (abs(noOfRotations - *myLeftCount) > ABS_ERROR) {              //* Ako je udaljenost od setpointa veca od dozvoljene
     standing = false;
     analogWrite(mySpeedPinL, myPidOutputL);                         //  greske, pomeraj motore,u suprotnom zaustavi
   }
   else{
-    analogWrite(mySpeedPinL, 0);
+    stopMotors();
     standing = true;
   }
 
@@ -188,7 +191,7 @@ void MotorControl :: driveRotations(int noOfRotations) {            //Funkcija z
     analogWrite(mySpeedPinR, myPidOutputR);
   }
   else{
-    analogWrite(mySpeedPinR, 0);
+    stopMotors();
     standing = true;
   }
   calculateDistance();
@@ -211,6 +214,42 @@ void MotorControl :: calculateDistance() {                          //Racunanje 
   *myRightDistance = (1.0 * (*myRightCount) / ENCODER_STEPS) * OBIM;
 }
 
+void MotorControl :: rotate(char dir, float angle){
+  int tmp1 = *myRightCount;
+  int tmp2 = *myLeftCount;
+  *myRightCount = 0;
+  *myLeftCount = 0;
+
+  if(dir == "LEFT"){
+    MotorControl :: setMotorDirectionL(DIR_BW);
+    MotorControl :: setMotorDirectionR(DIR_FW);
+  }else if(dir == "RIGHT"){
+    MotorControl :: setMotorDirectionL(DIR_FW);
+    MotorControl :: setMotorDirectionR(DIR_BW);
+  }else{
+    Serial.println("Pogresan smer!");
+  }
+
+  int outL = MAX_PWM;
+  int outR = MAX_PWM;
+
+  float curAngle;
+
+  while(curAngle=racunajUgao(*myRightCount,*myLeftCount) < angle ){
+    analogWrite(mySpeedPinR, outR);
+    analogWrite(mySpeedPinL, outL);
+
+    speedControl->racunajVremena(*myRightCount,*myLeftCount);
+    speedControl->balansirajBrzine(&outR,&outL);
+  }
+
+  analogWrite(mySpeedPinL, 0);
+  analogWrite(mySpeedPinR, 0);
+
+  *myRightCount = tmp1;
+  *myLeftCount = tmp2;
+}
+
 void MotorControl :: rotateLeft(int input){
     int tmp1 = *myRightCount;
     int tmp2 = *myLeftCount;
@@ -223,6 +262,15 @@ void MotorControl :: rotateLeft(int input){
     analogWrite(mySpeedPinR, 0);
     *myRightCount = tmp1;
     *myLeftCount = tmp2;
+}
+
+float MotorControl :: racunajUgao(long rightCount, long leftCount){
+    
+    float leftAngle = (360.0/ENCODER_STEPS)*leftCount;
+    float rightAngle = (360.0/ENCODER_STEPS)*rightCount;
+
+    return abs(leftAngle + rightAngle);
+
 }
 
 //KONTROLA PID-a **********************************************************************************************************************

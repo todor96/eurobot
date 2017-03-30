@@ -1,4 +1,5 @@
 #include "MotorControl.h"
+#include "SpeedControl.h"
 
 //Brojevi obrtaja tockova
 volatile long leftCount = 0;
@@ -14,14 +15,23 @@ int setpointInput = 0;
 //Inicijalizacija biblioteke za kontrolu motora
 MotorControl motorControl(&leftCount, &rightCount, &leftDistance, &rightDistance);
 
+//Funkcija interrupt-a za levi enkoder
+void leftEncoderEvent(){
+  motorControl.leftEncoderEvent();
+}
+
+//Funkcija interrupt-a za desni enkoder
+void rightEncoderEvent(){
+  motorControl.rightEncoderEvent();
+}
 
 void setup() {
   //Inicijalizacija serijskog porta
   Serial.begin(9600);
   
   //Inicijalizacija prekida za enkodere
-  attachInterrupt(digitalPinToInterrupt(20), leftEncoderEvent, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(18), rightEncoderEvent, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(20),leftEncoderEvent, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(18),rightEncoderEvent, CHANGE);
 }
 
 
@@ -91,12 +101,4 @@ void readSetpointSerial(){
   }
 }
 
-//Funkcija interrupt-a za levi enkoder
-void leftEncoderEvent(){
-  motorControl.leftEncoderEvent();
-}
 
-//Funkcija interrupt-a za desni enkoder
-void rightEncoderEvent(){
-  motorControl.rightEncoderEvent();
-}

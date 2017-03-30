@@ -28,7 +28,7 @@
 #define ABS_ERROR 2                   //Absolutna greska enkodera
 #define OBIM 40.2                     //Obim tockova
 #define ENCODER_STEPS 150             //Broj koraka enkodera u punom krugu
-
+#define MAX_PWM 120
 
 //PARAMETRI PID-a ***********************************************************
 
@@ -102,37 +102,38 @@ class MotorControl {
 
     //KONTROLA MOTORA **********************************************************************************************************
 
-    void MotorControl :: setMotorDirectionL(int dir);                 //Postavljanje smera obrtanja motora levog motora
+    void setMotorDirectionL(int dir);                 //Postavljanje smera obrtanja motora levog motora
 
-    void MotorControl :: setMotorDirectionR(int dir);                 //Postavljanje smera obrtanja motora desnog motora
+    void setMotorDirectionR(int dir);                 //Postavljanje smera obrtanja motora desnog motora
 
-    void MotorControl :: setMotorDirections(int dirL, int dirR);      //Postavljanje smera obrtanja oba motora
+    void setMotorDirections(int dirL, int dirR);      //Postavljanje smera obrtanja oba motora
 
-    void MotorControl :: stopMotorL() ;                               //Zaustavljanje levog motora
+    void stopMotorL() ;                               //Zaustavljanje levog motora
 
-    void MotorControl :: stopMotorR();                                //Zaustavljanje desnog motora
+    void stopMotorR();                                //Zaustavljanje desnog motora
 
-    void MotorControl :: stopMotors();                                //Zaustavljanje oba motora
+    void stopMotors();                                //Zaustavljanje oba motora
 
-    void MotorControl :: driveRotations(int noOfRotations);           //Funkcija za kretanje za zadati broj obrtaja enkodera
+    void driveRotations(int noOfRotations);           //Funkcija za kretanje za zadati broj obrtaja enkodera
 
-    void MotorControl :: driveCm(double len);                         //Funkcija za kretanje za zadati put u centimetrima
+    void driveCm(double len);                         //Funkcija za kretanje za zadati put u centimetrima
 
-    void MotorControl :: calculateDistance();                         //Racunanje predjenog puta tockova
+    void calculateDistance();                         //Racunanje predjenog puta tockova
 
-    void MotorControl :: rotateLeft(int input);
+    void rotateLeft(int input);
 
+    float racunajUgao(long rightCount, long leftCount);
 
     //KONTROLA PID-a ***********************************************************************************************************
 
-    void MotorControl :: calculatePidInput(int setpoint);             //Racunanje inputa PID-a i postavljanje smera motora
+    void calculatePidInput(int setpoint);             //Racunanje inputa PID-a i postavljanje smera motora
 
 
     //KONTROLA ENKODERA ********************************************************************************************************
 
-    void MotorControl :: rightEncoderEvent();                         //Racunanje obrtaja desnog enkodera
+    void rightEncoderEvent();                         //Racunanje obrtaja desnog enkodera
 
-    void MotorControl :: leftEncoderEvent();                          //Racunanje obrtaja levog enkodera
+    void leftEncoderEvent();                          //Racunanje obrtaja levog enkodera
 
 };
 
