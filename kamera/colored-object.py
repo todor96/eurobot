@@ -1,44 +1,45 @@
 import cv2
 import numpy as np
 import sys
-from functions import *
 import functions
 import time
 
 PRINT_LOG = False
-thresholdColor = {}
+thresholdColor = {'lower-color':[0,0,0],'upper-color':[0,0,0]}
 IMG_FRAME = None
 enabledPick = False
+pickedColorImg = np.zeros((200,200,3),np.uint8)
+CAM_ID = 0
 
 
 def mouseCallback(event,x,y,flags,param):
-    global thresholdColor,lowSV,highSV, enabledPick
+    global thresholdColor,lowSV,highSV, enabledPick, pickedColorImg, IMG_FRAME
 
     if not enabledPick:
         return
 
     if event == cv2.EVENT_LBUTTONDBLCLK:
         print '[+] Mouse position: x', x, 'y', y
+
+        color = IMG_FRAME[y][x]
+        colorT = (color[0],color[1],color[2])
+        pickedColorImg[:] = colorT
+
         hsv = cv2.cvtColor(IMG_FRAME, cv2.COLOR_BGR2HSV)
-        hsv_picked = hsv[x][y]
+        hsv_picked = hsv[y][x]
         print '[+] Picked color:', hsv_picked
 
 
         hsvLow_picked = hsv_picked.copy()
         hsvHigh_picked = hsv_picked.copy()
 
-        if(hsvLow_picked[0] >= 10):
-            hsvLow_picked[0] -= 10
-        else:
-            hsvLow_picked[0] = 0
+        hsvLow_picked[0] = hsvLow_picked[0]-5 if hsvLow_picked[0] >= 5 else 0
+        hsvLow_picked[1] = hsvLow_picked[1]-50 if hsvLow_picked[1]>=50 else 0
+        hsvLow_picked[2] = hsvLow_picked[2]-50 if hsvLow_picked[2]>=50 else 0
 
-        if(hsvHigh_picked[0] <= 245):
-            hsvHigh_picked[0] += 10
-        else:
-            hsvHigh_picked[0] = 255
-
-        hsvLow_picked[1] = hsvLow_picked[2] = lowSV
-        hsvHigh_picked[1] = hsvHigh_picked[2] = highSV
+        hsvHigh_picked[1] = hsvHigh_picked[1]+5 if hsvHigh_picked[0] <= 250 else 255
+        hsvHigh_picked[1] = hsvHigh_picked[1]+50 if hsvHigh_picked[1]<=205 else 255
+        hsvHigh_picked[2] = hsvHigh_picked[2]+50 if hsvHigh_picked[2]<=205 else 255
 
         thresholdColor['lower-color'] = hsvLow_picked
         thresholdColor['upper-color'] = hsvHigh_picked
@@ -50,46 +51,36 @@ def mouseCallback(event,x,y,flags,param):
 
 
 
-calibrateFromFile()
+if len(sys.argv) > 1:
+    for i in range(1,len(sys.argv)):
+        if sys.argv[i] == '--rgb':
+            thresholdColor = inputColorRGB()
+        elif sys.argv[i] == '--cam' and len(sys.argv)>=i+1:
+            CAM_ID = int(sys.argv[i+1])
+            print '[+] Camera set to', CAM_ID
+
+
+
+functions.calibrateFromFile()
 print functions.OBJECT_RADIUS,functions.CAM_DISTANCE,functions.REAL_OBJECT_WIDTH,functions.REAL_OBJECT_HEIGHT,functions.REAL_OBJECT_DIAM
 
-cap = cv2.VideoCapture(1)
-cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, RESOLUTION[0])
-cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, RESOLUTION[1])
+cap = cv2.VideoCapture(CAM_ID)
+cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, functions.RESOLUTION[0])
+cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, functions.RESOLUTION[1])
 # cap.set(cv2.cv.CV_CAP_PROP_FPS, 15)
 cv2.namedWindow('frame')
 cv2.setMouseCallback('frame',mouseCallback)
 
 
+# frames_num = 120
+# start_time = time.time()
 
-
-if len(sys.argv) > 1:
-
-    for i in range(1,len(sys.argv)):
-        if sys.argv[i] == '--rgb' and len(sys.argv)>=i+5:
-            thresholdColor['lower-color'] = rgb2hsvColor([sys.argv[i+1], sys.argv[i+2], sys.argv[i+3]])
-            thresholdColor['upper-color'] = rgb2hsvColor([sys.argv[i+1], sys.argv[i+2], sys.argv[i+3]])
-            if(thresholdColor['lower-color'][0] >= 10):
-                thresholdColor['lower-color'][0] -= 10
-            else:
-                thresholdColor['lower-color'][0] = 0
-
-            if(thresholdColor['upper-color'][0] <= 245):
-                thresholdColor['upper-color'][0] += 10
-            else:
-                thresholdColor['upper-color'][0] = 255
-
-            thresholdColor['lower-color'][1] = thresholdColor['lower-color'][2] = int(sys.argv[i+4])
-            thresholdColor['upper-color'][1] = thresholdColor['upper-color'][2] = int(sys.argv[i+5])
-
-if not thresholdColor.has_key('lower-color') and not thresholdColor.has_key('upper-color'):
-    thresholdColor = inputColorRGB()
 
 while(True):
+    # frames_num -= 1
 
     if not enabledPick:
         ret, IMG_FRAME = cap.read()
-        # IMG_FRAME = cv2.resize(IMG_FRAME,(640, 480), interpolation = cv2.INTER_CUBIC)
         hsv = cv2.cvtColor(IMG_FRAME, cv2.COLOR_BGR2HSV)
 
 
@@ -117,7 +108,10 @@ while(True):
             cv2.circle(IMG_FRAME,circleCenter,circleRadius, (0,0,255),3)
             # cv2.drawContours(frame, contours, maxCntIndex, (0,255,0), 3)
 
+
         cv2.imshow('frame',IMG_FRAME)
+        cv2.imshow('mask',mask)
+        cv2.imshow('picked',pickedColorImg)
 
     #log
     # print '[+] LC:', thresholdColor['lower-color'], 'UC:', thresholdColor['upper-color'], 'LEN:', len(contours), 'MAX:', maxCntIndex
@@ -136,17 +130,25 @@ while(True):
         saveLog.close()
         cv2.imwrite(saveNamePic, IMG_FRAME)
     elif k == ord('m') or k == ord('M'):
-        currDistance = measureDistance(circleRadius)
+        currDistance = functions.measureDistance(circleRadius)
         print '[+] Distance:', currDistance, 'cm'
     elif k == ord('c') or k == ord('C'):
-        calibrate(circleRadius)
+        functions.calibrate(circleRadius)
     elif k == ord('l') or k == ord('L'):
         PRINT_LOG = not PRINT_LOG
     elif k == ord('a') or k == ord('A'):
-        currAngle, currDirection = measureAngle(circleCenter,circleRadius)
+        currAngle, currDirection = functions.measureAngle(circleCenter,circleRadius)
         print '[+] Angle:', currAngle, ' Direction:', currDirection
     elif k == ord('p') or k == ord('P'):
         enabledPick = not enabledPick
+
+
+
+# end_time = time.time()
+# seconds = end_time - start_time
+# print 'SECS',seconds
+# fps = 120/seconds
+# print 'FPS',fps
 
 cap.release()
 cv2.destroyAllWindows()

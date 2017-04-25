@@ -8,7 +8,7 @@ OBJECT_RADIUS = 1
 REAL_OBJECT_WIDTH = 1
 REAL_OBJECT_HEIGHT = 1
 REAL_OBJECT_DIAM = 1
-RESOLUTION = (640,480)
+RESOLUTION = (352,288)
 lowSV = 100
 highSV = 255
 
@@ -100,7 +100,7 @@ def calibrateFromFile():
         REAL_OBJECT_WIDTH = float(values[2])
         REAL_OBJECT_HEIGHT = float(values[3])
         REAL_OBJECT_DIAM = float(values[4])
-        
+
         print '[+] Values from calibration file succesfuly loaded!'
     else:
         print '[!] Calibration file not found!'
