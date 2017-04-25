@@ -3,20 +3,23 @@ import numpy as np
 import math
 import os.path
 
-CAM_DISTANCE = 20
-OBJECT_RADIUS = 1
-REAL_OBJECT_WIDTH = 1
-REAL_OBJECT_HEIGHT = 1
-REAL_OBJECT_DIAM = 1
-RESOLUTION = (352,288)
-lowSV = 100
-highSV = 255
+#globalne promenljive
+CAM_DISTANCE = 20       #realna distanca objetka od kamere u cm
+OBJECT_RADIUS = 1       #precnik objekta u pikselima na udaljenosti 'CAM_DISTANCE'
+REAL_OBJECT_WIDTH = 1   #realna sirina objekta u cm
+REAL_OBJECT_HEIGHT = 1  #realna visina objetka u cm
+REAL_OBJECT_DIAM = 1    #realan precnik objekta u cm
+RESOLUTION = (352,288)  #rezolucija frejma
+lowSV = 100             #donja granica za S i V(HSV)
+highSV = 255            #gornja granica za S i V(HSV)
 
+#konverzija zi RGB u HSV
 def rgb2hsvColor(rgb):
     bgr = np.uint8([[[rgb[2],rgb[1],rgb[0]]]])
     hsv = cv2.cvtColor(bgr,cv2.COLOR_BGR2HSV)
     return hsv[0][0]
 
+#unos RGB vrednosti boje za izdvajanje iz frejma
 def inputColorRGB():
     global lowSV, highSV
 
@@ -47,6 +50,7 @@ def inputColorRGB():
     print 'LOW: ',hsvLowerColor,'HIGH: ',hsvUpperColor
     return {'upper-color':hsvUpperColor, 'lower-color':hsvLowerColor}
 
+#kalibracija programa
 def calibrate(objRadius):
     global CAM_DISTANCE, OBJECT_RADIUS, REAL_OBJECT_WIDTH, REAL_OBJECT_HEIGHT, REAL_OBJECT_DIAM
 
@@ -84,6 +88,7 @@ def calibrate(objRadius):
     calibrationFile.write(str(OBJECT_RADIUS) + ';' + str(CAM_DISTANCE) + ';' + str(REAL_OBJECT_WIDTH) + ';' + str(REAL_OBJECT_HEIGHT) + ';' + str(REAL_OBJECT_DIAM))
     calibrationFile.close()
 
+#automatska kalibracija iz fajla
 def calibrateFromFile():
     global CAM_DISTANCE, OBJECT_RADIUS, REAL_OBJECT_WIDTH, REAL_OBJECT_HEIGHT, REAL_OBJECT_DIAM
 
@@ -105,6 +110,7 @@ def calibrateFromFile():
     else:
         print '[!] Calibration file not found!'
 
+#racunanje distance objekta od kamere
 def measureDistance(currentRadius):
     global CAM_DISTANCE, OBJECT_RADIUS
 
@@ -117,6 +123,9 @@ def measureDistance(currentRadius):
 
     return currentDistance
 
+#racunanje ugla objekta u odnosu na kameru
+#   direction = 1 -> RIGHT
+#   direction = -1 -> LEFT
 def measureAngle(center,currentRadius):
     global CAM_DISTANCE, REAL_OBJECT_DIAM
 
@@ -131,8 +140,6 @@ def measureAngle(center,currentRadius):
 
     angle = 90 - math.degrees(math.acos(b/c*1.0))
 
-    # direction = 1 -> RIGHT
-    # direction = -1 -> LEFT
     direction = 1
     if(center[0] < screenCenter[0]):
         direction = -1
